@@ -49,7 +49,7 @@ class User extends Authenticatable implements JWTSubject
     }
     public function eleve()
     {
-        return $this->belongsTo(Eleve::class);
+        return $this->hasMany(Eleve::class);
     }
     public function getJWTCustomClaims()
     {
