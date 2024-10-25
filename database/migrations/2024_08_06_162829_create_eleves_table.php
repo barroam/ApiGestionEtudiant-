@@ -21,9 +21,10 @@ return new class extends Migration
             $table->string('matricule');
             $table->date('date_naissance');
             $table->string('email')->unique();
-            $table->string('photo_path');
-            $table->foreignIdFor(User::class)->oneDelete('cascade');
+            $table->string('photo')->nullable(); // Rendre la photo nullable si nécessaire
+            $table->foreignIdFor(User::class)->constrained()->onDelete('cascade'); // Correction ici
             $table->timestamps();
+            $table->softDeletes(); 
         });
     }
 

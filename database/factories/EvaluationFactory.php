@@ -19,10 +19,7 @@ class EvaluationFactory extends Factory
     public function definition(): array
     {
         return [
-            'matiere_id' => Matiere::factory(), // Associe un enregistrement de Matiere
-            'eleve_id' => Eleve::factory(), // Associe un enregistrement d'Eleves
-        'date' => $this->faker->date,
-        'valeurs' => $this->faker->numberbetween(0,20),
+        
         ];
     }
 }

@@ -18,15 +18,6 @@ class EleveFactory extends Factory
     public function definition(): array
     {
         return [
-            'nom' => $this->faker->lastName,
-            'prenom' => $this->faker->firstName,
-            'adresse' => $this->faker->address,
-            'telephone' => $this->faker->phoneNumber, // Assurez-vous que le format est correct
-            'matricule' => $this->faker->unique()->word,
-            'date_naissance' => $this->faker->date,
-            'email' => $this->faker->unique()->safeEmail,
-            'photo_path' => $this->faker->imageUrl,
-            'user_id' => User::factory(),
         ];
     }
 }

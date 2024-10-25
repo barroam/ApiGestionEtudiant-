@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('matieres', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('eleve_id')->constrained()->onDelete('cascade');
             $table->string('libelle');
             $table->date('date_debut');
             $table->date('date_fin');

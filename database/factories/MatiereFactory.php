@@ -18,10 +18,7 @@ class MatiereFactory extends Factory
     public function definition(): array
     {
         return [
-            'eleve_id' => Eleve::factory(), // Associe un enregistrement aléatoire de Eleves
-            'libelle' => $this->faker->word,
-            'date_debut' => $this->faker->date,
-            'date_fin' => $this->faker->date,
+           
         ];
 
     }

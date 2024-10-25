@@ -5,140 +5,215 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use App\Http\Requests\LoginRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Http\Requests\RegisterRequest;
 use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\Response;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
 class AuthJwtController extends Controller
 {
-
     public function register(Request $request): JsonResponse
     {
-        $validate = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'prenom' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
+        DB::beginTransaction();
 
-        if ($validate->fails()) {
+        try {
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'prenom' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users',
+                'password' => 'required|string|min:6|confirmed',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validation error',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $user = new User();
+            $user->name = $request->name;
+            $user->prenom = $request->prenom;
+            $user->email = $request->email;
+            $user->password = Hash::make($request->password);
+
+            if (!$user->save()) {
+                throw new \Exception('Failed to save user');
+            }
+
+            $token = Auth::guard('api')->login($user);
+
+            if (!$token) {
+                throw new \Exception('Failed to generate token');
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'User successfully registered',
+                'user' => $user,
+                'authorization' => [
+                    'token' => $token,
+                    'type' => 'bearer',
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Registration error: ' . $e->getMessage());
+
             return response()->json([
                 'status' => false,
-                'error_message' => $validate->errors(),
-            ], 400);
+                'message' => 'Registration failed',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $user = User::create([
-            'name' => $request->name,
-            'prenom' => $request->prenom,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-
-        // Génération du token
-        $token = Auth::guard('api')->login($user);
-
-        return response()->json([
-            'status' => true,
-            'authorisation' => [
-                'token' => $token,
-                'type' => 'bearer',
-            ],
-        ]);
     }
 
+    /**
+     * User login
+     */
     public function login(Request $request): JsonResponse
     {
-        $validate = Validator::make($request->all(), [
-            'email' => 'required|string|email',
-            'password' => 'required|string',
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|string|email',
+                'password' => 'required|string',
+            ]);
 
-        if ($validate->fails()) {
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validation error',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Vérifier si l'utilisateur existe
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+
+            // Vérifier le mot de passe
+            if (!Hash::check($request->password, $user->password)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invalid credentials'
+                ], 401);
+            }
+
+            // Générer le token
+            $token = Auth::guard('api')->login($user);
+
+            if (!$token) {
+                throw new \Exception('Failed to generate token');
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Login successful',
+                'user' => $user,
+                'authorization' => [
+                    'token' => $token,
+                    'type' => 'bearer',
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Login error: ' . $e->getMessage());
+
             return response()->json([
                 'status' => false,
-                'error_message' => $validate->errors(),
-            ], 400);
+                'message' => 'Login failed',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $credentials = $request->only('email', 'password');
-        $token = Auth::guard('api')->attempt($credentials);
-
-        if (!$token) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Unauthorized',
-            ], 401);
-        }
-
-        return response()->json([
-            'status' => true,
-            'authorisation' => [
-                'token' => $token,
-                'type' => 'bearer',
-            ],
-        ]);
     }
 
-    //if you want use this methods for yourself, add role in your user model and you validate in this methods
-
+    /**
+     * Refresh token
+     */
     public function refresh(): JsonResponse
     {
-        return response()->json([
-            'status' => true,
-            'authorisation' => [
-                'token' => Auth::refresh(true),
-                'type' => 'bearer',
-            ],
-        ]);
+        try {
+            $token = Auth::guard('api')->refresh();
+
+            return response()->json([
+                'status' => true,
+                'authorization' => [
+                    'token' => $token,
+                    'type' => 'bearer',
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Token refresh error: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Token refresh failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    public function blackList(): JsonResponse
-    {
-        //if you want add to blacklist forever, pass true as parameter
-        Auth::invalidate();
-
-        return response()->json([
-            'status' => true,
-            'message' => 'token added to blacklist successfully'
-        ], 200);
-    }
-
+    /**
+     * Logout user
+     */
     public function logout(): JsonResponse
     {
-        Auth::logout();
+        try {
+            Auth::guard('api')->logout();
 
-        return response()->json([
-            'status' => true,
-            'message' => 'logout successfully'
-        ], 200);
+            return response()->json([
+                'status' => true,
+                'message' => 'Successfully logged out'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Logout error: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Logout failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    public function getTokenByUser(Request $request): JsonResponse
+    /**
+     * Get user profile
+     */
+    public function profile(): JsonResponse
     {
-        $validate = Validator::make(['user_id' => $request->user_id], [
-            'user_id' => 'required',
-        ]);
+        try {
+            $user = Auth::guard('api')->user();
 
-        if ($validate->fails()) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Profile retrieved successfully',
+                'user' => $user
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Profile retrieval error: ' . $e->getMessage());
+
             return response()->json([
                 'status' => false,
-                'error_message' => $validate->errors(),
-            ], 400);
+                'message' => 'Failed to retrieve profile',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        if (!Auth::tokenById($request->user_id)) {
-            return response()->json([
-                'status' => false,
-                'error_message' => "There aren't Token with this user id",
-            ], 400);
-        }
-
-        return response()->json([
-            'status' => true,
-            'token' => Auth::tokenById($request->user_id)
-        ]);
     }
-
 }
