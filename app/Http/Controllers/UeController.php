@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ue;
+use Illuminate\Http\Request;
 use App\Http\Requests\StoreUeRequest;
 use App\Http\Requests\UpdateUeRequest;
-use App\Models\Ue;
 
 class UeController extends Controller
 {
-    
+
     public function index()
     {
         try {

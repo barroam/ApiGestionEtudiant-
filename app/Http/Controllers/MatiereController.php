@@ -49,7 +49,7 @@ class MatiereController extends Controller
             ]);
 
             // Ajouter l'user_id de l'utilisateur authentifié
-            $validatedData['user_id'] = Auth::id();
+
 
             // Création de la matière
             $matiere = Matiere::create($validatedData);
@@ -74,12 +74,7 @@ class MatiereController extends Controller
     {
         try {
             // Vérifier si l'utilisateur est autorisé à accéder à cette matière
-            if (!Auth::id()) {
-                return response()->json([
-                    'status' => false,
-                    'error_message' => 'Vous n\'êtes pas autorisé à accéder à cette matière.',
-                ], 403);
-            }
+
 
             return response()->json([
                 'status' => true,
@@ -100,12 +95,6 @@ class MatiereController extends Controller
     {
         try {
             // Vérifier si l'utilisateur est autorisé à modifier cette matière
-            if (!Auth::id()) {
-                return response()->json([
-                    'status' => false,
-                    'error_message' => 'Vous n\'êtes pas autorisé à modifier cette matière.',
-                ], 403);
-            }
 
             // Validation des données
             $validatedData = $request->validate([
@@ -137,13 +126,7 @@ class MatiereController extends Controller
     {
         try {
             // Vérifier si l'utilisateur est autorisé à supprimer cette matière
-            if (!Auth::id()) {
-                return response()->json([
-                    'status' => false,
-                    'error_message' => 'Vous n\'êtes pas autorisé à supprimer cette matière.',
-                ], 403);
-            }
-
+          
             // Supprimer la matière
             $matiere->delete();
 

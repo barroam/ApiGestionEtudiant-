@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
+use App\Models\Evaluation;
+use Illuminate\Http\Request;
 use App\Http\Requests\StoreEvaluationRequest;
 use App\Http\Requests\UpdateEvaluationRequest;
-use App\Models\Evaluation;
 
 class EvaluationController extends Controller
 {
@@ -22,7 +24,7 @@ class EvaluationController extends Controller
                 'status' => true,
                 'data' => $evaluations,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'status' => false,
                 'error_message' => 'Erreur lors de la récupération des évaluations : ' . $e->getMessage(),
@@ -44,8 +46,6 @@ class EvaluationController extends Controller
                 'valeurs' => 'required|integer|min:0',
             ]);
 
-            // Ajouter l'user_id de l'utilisateur authentifié si nécessaire
-            $validatedData['user_id'] = Auth::id();
 
             // Création de l'évaluation
             $evaluation = Evaluation::create($validatedData);
