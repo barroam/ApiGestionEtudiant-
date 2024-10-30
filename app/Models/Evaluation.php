@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Eleve;
+use App\Models\Matiere;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Evaluation extends Model
 {
@@ -16,6 +18,7 @@ class Evaluation extends Model
 
     public function eleve()
     {
-        return $this->belongsTo(Eleves::class);
+        return $this->belongsTo(Eleve::class);
     }
 }
+

@@ -16,9 +16,6 @@ class EleveController extends Controller
 {
 
     /**
-     * Display a listing of the resource.
-     */
-     /**
      * Afficher la liste des élèves
      */
     public function index()
@@ -57,19 +54,11 @@ class EleveController extends Controller
             'matricule' => 'required|string|max:50|unique:eleves,matricule',
             'date_naissance' => 'required|date|before:today',
             'email' => 'required|string|email|max:255|unique:eleves',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+            'photo' => 'nullable|string|url'
         ]);
 
         try {
             DB::beginTransaction();
-
-            // Gestion de la photo si présente
-            if ($request->hasFile('photo')) {
-                $photo = $request->file('photo');
-                $fileName = time() . '_' . Str::slug($request->nom) . '_' . Str::slug($request->prenom) . '.' . $photo->getClientOriginalExtension();
-                $photoPath = $photo->storeAs('photos/eleves', $fileName, 'public');
-                $validatedData['photo'] = $photoPath;
-            }
 
             // Ajout de l'user_id de l'utilisateur authentifié
             $validatedData['user_id'] = auth()->id();
@@ -86,11 +75,6 @@ class EleveController extends Controller
 
         } catch (Exception $e) {
             DB::rollBack();
-
-            // Si une photo a été uploadée mais qu'il y a eu une erreur, on la supprime
-            if (isset($photoPath)) {
-                Storage::disk('public')->delete($photoPath);
-            }
 
             return response()->json([
                 'status' => false,
@@ -140,23 +124,10 @@ class EleveController extends Controller
                 'matricule' => ['required', 'string', 'max:50', Rule::unique('eleves')->ignore($id)],
                 'date_naissance' => 'required|date|before:today',
                 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('eleves')->ignore($id)],
-                'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+                'photo' => 'nullable|string|url'
             ]);
 
             DB::beginTransaction();
-
-            // Gestion de la photo
-            if ($request->hasFile('photo')) {
-                // Supprimer l'ancienne photo si elle existe
-                if ($eleve->photo) {
-                    Storage::disk('public')->delete($eleve->photo);
-                }
-
-                $photo = $request->file('photo');
-                $fileName = time() . '_' . Str::slug($request->nom) . '_' . Str::slug($request->prenom) . '.' . $photo->getClientOriginalExtension();
-                $photoPath = $photo->storeAs('photos/eleves', $fileName, 'public');
-                $validatedData['photo'] = $photoPath;
-            }
 
             $eleve->update($validatedData);
 
@@ -170,11 +141,6 @@ class EleveController extends Controller
 
         } catch (Exception $e) {
             DB::rollBack();
-
-            // Si une nouvelle photo a été uploadée mais qu'il y a eu une erreur, on la supprime
-            if (isset($photoPath)) {
-                Storage::disk('public')->delete($photoPath);
-            }
 
             return response()->json([
                 'status' => false,

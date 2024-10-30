@@ -17,13 +17,11 @@ Route::middleware('auth:api')->group(function () {
 
     Route::post('refresh', [AuthJwtController::class, 'refresh']);
     Route::post('logout', [AuthJwtController::class, 'logout']);
-    Route::get('profile', [AuthJwtController::class, 'profile']);
-
     Route::post('eleves-restore/{id}', [EleveController::class, 'restore']);
 });
+
 
 Route::middleware('auth:api')->apiResource('eleves', EleveController::class);
 Route::middleware('auth:api')->apiResource('matieres', MatiereController::class);
 Route::middleware('auth:api')->apiResource('evaluations', EvaluationController::class);
 Route::middleware('auth:api')->apiResource('ues', UeController::class);
-
